@@ -5,6 +5,14 @@ WKD: WDK10
 
 打开UnrealDbg.sln然后直接编译就行了，注意，需要编译64位版本 UnrealDbgDll只能编译release版本，至于UI则是UnrealDbg项目，使用delphi打开即可
 
+打开nrealDbg.sln后如下图所示
+
+![](./1.png)
+
+然后直接在解决方案上点生成即可（你也可以单独编译某个项目）
+
+![](./2.png)
+
 
 
 # UnrealDbg 项目详细介绍

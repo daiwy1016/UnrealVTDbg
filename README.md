@@ -1,3 +1,12 @@
+# 如何编译该项目
+编译器：VS2019
+SDK: 10.0.019041或最新版本
+WKD: WDK10
+
+打开UnrealDbg.sln然后直接编译就行了，注意，需要编译64位版本 UnrealDbgDll只能编译release版本，至于UI则是UnrealDbg项目，使用delphi打开即可
+
+
+
 # UnrealDbg 项目详细介绍
 
 

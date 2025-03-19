@@ -3,6 +3,10 @@
 #ifndef _LOGGER_H
 #define _LOGGER_H
 
+typedef void(__stdcall* PFN_PRINTLOG)(TCHAR* sText);
+
+extern PFN_PRINTLOG pfnPrintLog;
+
 
 class Logger {
 public:
@@ -26,6 +30,26 @@ public:
         }
     }
 
+    //void _outDebug(TCHAR* sText)
+    //{
+    //    // 线程同步：使用互斥锁保护临界区
+    //    std::lock_guard<std::mutex> lock(mutex);
+    //    TCHAR szBuf[1024] = { 0 };
+
+    //    if (m_modName.empty())
+    //    {
+    //        m_modName = Common::stringToWideString(FileSystem::GetSelfModuleName());
+    //    }
+
+    //    wcscat(szBuf, _T("["));
+    //    wcscat(szBuf, m_modName.c_str());
+    //    wcscat(szBuf, _T("] "));
+    //    wcscat(szBuf, sText);
+    //    //logger.Log(Common::wideStringToString(sText));
+    //    OutputDebugString(szBuf);
+    //    OutputDebugString(_T("\n"));
+    //}
+
     void _outDebug(TCHAR* sText)
     {
         // 线程同步：使用互斥锁保护临界区
@@ -34,16 +58,26 @@ public:
 
         if (m_modName.empty())
         {
-            m_modName = LingoLab::stringToWideString(FileSystem::GetSelfModuleName());
+            m_modName = Common::stringToWideString(FileSystem::GetSelfModuleName());
         }
 
         wcscat(szBuf, _T("["));
         wcscat(szBuf, m_modName.c_str());
         wcscat(szBuf, _T("] "));
         wcscat(szBuf, sText);
-        //logger.Log(Common::wideStringToString(sText));
-        OutputDebugString(szBuf);
-        OutputDebugString(_T("\n"));
+
+        try
+        {
+            if (!pfnPrintLog)
+            {
+                pfnPrintLog = (PFN_PRINTLOG)GetProcAddress(GetModuleHandle(NULL), "PrintLog");
+            }
+            pfnPrintLog(szBuf);
+        }
+        catch (...)
+        {
+            ::MessageBox(NULL, _T("定位不到PrintLog入口!"), _T("错误:"), MB_ICONWARNING);
+        }
     }
 
     int outDebug(const TCHAR* _Format, ...)

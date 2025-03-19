@@ -19664,7 +19664,6 @@ typedef enum
 {
   /**
    * The logical processor is executing instructions normally.
-   * 逻辑处理器正在正常执行指令。
    */
   vmx_active                                                   = 0x00000000,
 
@@ -19680,7 +19679,6 @@ typedef enum
 
   /**
    * The logical processor is inactive because it is waiting for a startup-IPI (SIPI).
-   * 逻辑处理器处于非活动状态，因为它正在等待启动 IPI（SIPI）。
    */
   vmx_wait_for_sipi                                            = 0x00000003,
 } vmx_guest_activity_state;

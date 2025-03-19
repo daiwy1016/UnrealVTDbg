@@ -6,6 +6,8 @@
 #include <vector>
 #include <sstream>
 #include <mutex>
-#include "../StringHandler/StringHandler.h"
+#include "../Common.h"
 #include "../FileSystem/FileSystem.h"
 #include "Logger.h"
+
+PFN_PRINTLOG pfnPrintLog;

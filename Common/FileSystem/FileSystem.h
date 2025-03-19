@@ -14,6 +14,7 @@ namespace FileSystem
     std::wstring ReadIniValue(const std::wstring& filename, const std::wstring& section, const std::wstring& key);
     void WriteIniValue(const std::wstring& filename, const std::wstring& section, const std::wstring& key, const std::wstring& value);
     std::wstring GetModuleDirectory(HMODULE hModule);
+    std::wstring GetModuleDirectory2(std::wstring path);
     //获取自身模块名称
     std::string GetSelfModuleName();
 }

@@ -54,7 +54,7 @@ BOOLEAN StrIsValid(WCHAR* _Str)
 {
     if (_Str)
     {
-        if (_Str[0] == _T('\0'))
+        if (*_Str == _T('\0'))
             return FALSE;
         else
             return TRUE;
@@ -110,7 +110,7 @@ NTSTATUS GetProcessName(IN PEPROCESS Process, OUT WCHAR* fileName)
     PUNICODE_STRING ImageFileName;
     Status = SeLocateProcessImageName(Process, &ImageFileName);
     if (NT_SUCCESS(Status))
-    {        
+    {
         if (GetModuleFileName(fileName, ImageFileName))
         {
             Status = STATUS_SUCCESS;

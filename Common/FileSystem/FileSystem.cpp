@@ -30,23 +30,26 @@ namespace FileSystem
     {
         std::vector<std::wstring> files;
 
-        std::wstring searchPath = directoryPath + L"\\*.*";
-        WIN32_FIND_DATAW findData;
-        HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findData);
-
-        if (hFind != INVALID_HANDLE_VALUE)
+        if (!directoryPath.empty())
         {
-            do
-            {
-                if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    //std::wstring filePath = directoryPath + L"\\" + findData.cFileName;
-                    std::wstring filePath = findData.cFileName;
-                    files.push_back(filePath);
-                }
-            } while (FindNextFileW(hFind, &findData));
+            std::wstring searchPath = directoryPath + L"\\*.*";
+            WIN32_FIND_DATAW findData;
+            HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findData);
 
-            FindClose(hFind);
+            if (hFind != INVALID_HANDLE_VALUE)
+            {
+                do
+                {
+                    if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                    {
+                        //std::wstring filePath = directoryPath + L"\\" + findData.cFileName;
+                        std::wstring filePath = findData.cFileName;
+                        files.push_back(filePath);
+                    }
+                } while (FindNextFileW(hFind, &findData));
+
+                FindClose(hFind);
+            }
         }
 
         return files;
@@ -70,6 +73,20 @@ namespace FileSystem
         DWORD length = GetModuleFileName(hModule, buffer, MAX_PATH);
         if (length > 0 && length < MAX_PATH) {
             std::wstring path(buffer, length);
+            size_t lastSlash = path.find_last_of(L"\\/");
+            if (lastSlash != std::wstring::npos)
+            {
+                std::wstring directory = path.substr(0, lastSlash + 1);
+                return directory;
+            }
+        }
+        return L"";
+    }
+
+    std::wstring GetModuleDirectory2(std::wstring path)
+    {
+        if (!path.empty())
+        {
             size_t lastSlash = path.find_last_of(L"\\/");
             if (lastSlash != std::wstring::npos)
             {

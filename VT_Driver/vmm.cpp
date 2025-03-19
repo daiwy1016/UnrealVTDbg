@@ -308,7 +308,12 @@ void adjust_control_registers()
 }
 
 //初始化逻辑处理器并启动当前vmcs管理的虚拟机
-bool init_logical_processor(unsigned int iter)
+EXTERN_C
+void init_logical_processor(void* guest_rsp)
+{
+}
+
+void init_logical_processor2(unsigned int iter)
 {
 	//DbgBreakPoint();
 	unsigned __int64 processor_number = iter;
@@ -321,14 +326,14 @@ bool init_logical_processor(unsigned int iter)
 	if (!hv::enter_vmx_operation(vcpu->vmxon))  //进入vmx模式
 	{
 		LogError("Failed to put vcpu %d into VMX operation.\n", processor_number);
-		return false;
+		return;
 	}
 
 
 	if (!hv::load_vmcs_pointer(vcpu->vmcs))
 	{
 		LogError("load_vmcs_pointer失败.\n", processor_number);
-		return false;
+		return;
 	}
 
 	//创建host的idt和gdt
@@ -348,9 +353,7 @@ bool init_logical_processor(unsigned int iter)
 		vcpu->vcpu_status.vmm_launched = false;
 		vcpu->vcpu_status.vmx_on = false;
 		__vmx_off();  //退出vmx模式
-		return false;
 	}
-	return true;
 }
 
 //创建host页表
@@ -389,7 +392,9 @@ void create_host_page_tables()
 
 bool initalize_vcpu(unsigned int iter)
 {
-	return init_logical_processor(iter);
+	init_logical_processor2(iter);
+
+	return true;
 }
 
 //初始化vmm 并运行

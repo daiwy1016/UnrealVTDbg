@@ -123,12 +123,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <IncludePath>E:\Projects\VS\repos\UnrealDbg\Common;$(SolutionDir)Common\Ring0;$(VC_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>..\Common;$(SolutionDir)Common\Ring0;$(VC_IncludePath);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <IncludePath>..\Common;..\Common\Ring0;$(VC_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>..\Common;$(SolutionDir)Common\Ring0;$(VC_IncludePath);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>

@@ -97,8 +97,8 @@
     <ClCompile Include="Init\Symbolic\InitNtoskrnl.cpp">
       <Filter>Source Files\Init\Symbolic</Filter>
     </ClCompile>
-    <ClCompile Include="..\Common\Ring0\String\StringHandler.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\Common\Ring0\String\StringHandler.cpp">
+      <Filter>Source Files\Common\String</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,8 +195,8 @@
     <ClInclude Include="Init\Symbolic\InitNtoskrnl.h">
       <Filter>Header Files\Init\Symbolic</Filter>
     </ClInclude>
-    <ClInclude Include="..\Common\Ring0\String\StringHandler.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\Common\Ring0\String\StringHandler.h">
+      <Filter>Header Files\Common\String</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

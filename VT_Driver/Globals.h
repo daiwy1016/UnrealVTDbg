@@ -13,7 +13,7 @@
 #define EPTO_HOOK_FUNCTION         2
 
 #define EPT_PD_COUNT 512
-#define HOST_PHYSICAL_MEMORY_PD_COUNT 64
+#define HOST_PHYSICAL_MEMORY_PD_COUNT 512
 
 
 #define VMCALL_IDENTIFIER 0xBF5587567C4C830F  //VT_Driver经16位md5摘要
@@ -104,17 +104,17 @@ union __rflags
         unsigned __int64 sign_flag : 1;  //bit7
         unsigned __int64 trap_flag : 1;  //bit8
         unsigned __int64 interrupt_enable_flag : 1;  //bit9
-        unsigned __int64 direction_flag : 1; //bit10
-        unsigned __int64 overflow_flag : 1; //bit11
-        unsigned __int64 io_privilege_level : 2; //bit13:12
-        unsigned __int64 nested_task_flag : 1; //bit14
-        unsigned __int64 reserved_3 : 1; //bit15
-        unsigned __int64 resume_flag : 1; //bit16
-        unsigned __int64 virtual_8086_mode_flag : 1; //bit17
-        unsigned __int64 alignment_check_flag : 1; //bit18
-        unsigned __int64 virtual_interrupt_flag : 1; //bit19
-        unsigned __int64 virtual_interrupt_pending_flag : 1; //bit20
-        unsigned __int64 identification_flag : 1; //bit21
+        unsigned __int64 direction_flag : 1;
+        unsigned __int64 overflow_flag : 1;
+        unsigned __int64 io_privilege_level : 2;
+        unsigned __int64 nested_task_flag : 1;
+        unsigned __int64 reserved_3 : 1;
+        unsigned __int64 resume_flag : 1;
+        unsigned __int64 virtual_8086_mode_flag : 1;
+        unsigned __int64 alignment_check_flag : 1;
+        unsigned __int64 virtual_interrupt_flag : 1;
+        unsigned __int64 virtual_interrupt_pending_flag : 1;
+        unsigned __int64 identification_flag : 1;
     };
 };
 
@@ -884,7 +884,6 @@ struct __vcpu
     alignas(0x1000) vmx_msr_bitmap msr_bitmap;
 
     // the number of NMIs that need to be delivered
-    // 需要交付的 NMI 数量
     uint32_t volatile queued_nmis;
 
     // current preemption timer

@@ -115,7 +115,14 @@ void set_exit_control(__vmx_exit_control& exit_control)
 	*/
 	exit_control.load_ia32_perf_global_control = true;
 
-
+	/**
+	* This control affects VM exits due to external interrupts:
+	* ?If such a VM exit occurs and this control is 1, the logical processor acknowledges the
+	*   interrupt controller, acquiring the interrupt抯 vector. The vector is stored in the VM-exit
+	*   interruption-information field, which is marked valid.
+	* ?If such a VM exit occurs and this control is 0, the interrupt is not acknowledged and the
+	*   VM-exit interruption-information field is marked invalid.
+	*/
 	exit_control.acknowledge_interrupt_on_exit = true;
 
 	/**
@@ -571,10 +578,8 @@ void set_pinbased_control_msr(__vmx_pinbased_control_msr& pinbased_controls)
 	/**
 	* If this control is 1, the VMX-preemption timer counts down in VMX non-root operation; see
 	* Section 25.5.1. A VM exit occurs when the timer counts down to zero; see Section 25.2.
-	* 如果此控制为 1，则 VMX 抢占计时器在 VMX non-root operation中倒计时；
-	* 请参阅第 25.5.1 节。当计时器倒计时到零时，会发生 VM exit；请参阅第 25.2 节。
 	*/
-	pinbased_controls.activate_vmxpreemption_timer = false;
+	pinbased_controls.activate_vmxpreemption_timer = true;
 
 	/**
 	* If this control is 1, the processor treats interrupts with the posted-interrupt notification vector
@@ -813,7 +818,7 @@ void fill_vmcs_guest_fields(__vcpu* vcpu, void* guest_rsp)
     * CR3-target count 字段值为 0 时（N = 0），将产生 VM-exit。
 	*/
 	hv::vmwrite<unsigned __int64>(CR3_TARGET_COUNT, 1);
-	hv::vmwrite<unsigned __int64>(CR3_TARGET_VALUE0, hv::get_system_directory_table_base());  //此处应该过滤system进程的cr3
+	hv::vmwrite<unsigned __int64>(CR3_TARGET_VALUE0, hv::ghv.system_cr3.flags);
 
 	hv::vmwrite<unsigned __int64>(GUEST_CR4, __readcr4());
 	hv::vmwrite<unsigned __int64>(CR4_READ_SHADOW, __readcr4() & ~0x2000);
@@ -834,8 +839,7 @@ void fill_vmcs_guest_fields(__vcpu* vcpu, void* guest_rsp)
 
 
 	// MSRS Guest
-	//hv::vmwrite<unsigned __int64>(GUEST_DEBUG_CONTROL, __readmsr(IA32_DEBUGCTL));
-	hv::vmwrite<unsigned __int64>(GUEST_DEBUG_CONTROL, 0);
+	hv::vmwrite<unsigned __int64>(GUEST_DEBUG_CONTROL, __readmsr(IA32_DEBUGCTL));
 	hv::vmwrite<unsigned __int64>(GUEST_SYSENTER_CS, __readmsr(IA32_SYSENTER_CS));
 	hv::vmwrite<unsigned __int64>(GUEST_SYSENTER_ESP, __readmsr(IA32_SYSENTER_ESP));
 	hv::vmwrite<unsigned __int64>(GUEST_SYSENTER_EIP, __readmsr(IA32_SYSENTER_EIP));
@@ -845,7 +849,6 @@ void fill_vmcs_guest_fields(__vcpu* vcpu, void* guest_rsp)
 
 	hv::vmwrite<unsigned __int64>(GUEST_ACTIVITY_STATE, vmx_active);
 	hv::vmwrite<unsigned __int64>(GUEST_INTERRUPTIBILITY_STATE, 0);  //中断阻塞状态
-	hv::vmwrite<unsigned __int64>(GUEST_SM_BASE, 0);
 	hv::vmwrite<unsigned __int64>(GUEST_PENDING_DEBUG_EXCEPTION, 0);
 	hv::vmwrite<unsigned __int64>(GUEST_VMX_PREEMPTION_TIMER_VALUE, MAXULONG64);
 }

@@ -299,7 +299,6 @@ namespace hv
         }
 
         // 3.28.3.3.4
-        _mm_mfence();
         invept_all_contexts_func();
 
         return true;
@@ -415,7 +414,6 @@ namespace hv
     // 将每个 EPT 分页结构中的内存类型设置为指定值将每个 EPT 分页结构中的内存类型设置为指定值
     void set_ept_memory_type(__ept_state& ept_state, uint8_t const memory_type)
     {
-        sLog("\n");
         for (size_t i = 0; i < EPT_PD_COUNT; ++i)
         {
             for (size_t j = 0; j < 512; ++j)
@@ -448,7 +446,6 @@ namespace hv
     // 此函数应仅在 vmx-operation 期间从host调用。
     void update_ept_memory_type(__ept_state& ept_state)
     {
-        sLog("\n");
         // TODO: completely virtualize the guest MTRRs
         // 完全虚拟化guest MTRR
         auto const mtrrs = read_mtrr_data();

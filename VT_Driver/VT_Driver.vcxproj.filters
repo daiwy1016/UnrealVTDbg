@@ -44,6 +44,18 @@
     <Filter Include="Header Files\Common\String">
       <UniqueIdentifier>{38a8230d-3685-4744-b5db-7a649c50cadf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Common\Comms">
+      <UniqueIdentifier>{3135be90-e046-4a91-8bc9-131026394187}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Common\Comms">
+      <UniqueIdentifier>{45d2866b-22b6-4d49-a92e-e1ea92aa5543}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common\Spinlock">
+      <UniqueIdentifier>{b23797d3-99da-416b-be12-583eaca3a884}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Common\Spinlock">
+      <UniqueIdentifier>{22247f65-9444-4724-a814-cd73dc9ef30f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vmm.cpp">
@@ -73,9 +85,6 @@
     <ClCompile Include="poolmanager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="spinlock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="invalid_vpid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -99,6 +108,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Common\Ring0\String\StringHandler.cpp">
       <Filter>Source Files\Common\String</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\Ring0\Comms\SerialPort.cpp">
+      <Filter>Source Files\Common\Comms</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\Ring0\Spinlock\spinlock.cpp">
+      <Filter>Source Files\Common\Spinlock</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -162,9 +177,6 @@
     <ClInclude Include="vm_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="spinlock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="mtrr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -197,6 +209,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Common\Ring0\String\StringHandler.h">
       <Filter>Header Files\Common\String</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\Ring0\Comms\SerialPort.h">
+      <Filter>Header Files\Common\Comms</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\Ring0\Spinlock\spinlock.h">
+      <Filter>Header Files\Common\Spinlock</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

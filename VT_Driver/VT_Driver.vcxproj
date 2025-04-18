@@ -68,6 +68,7 @@
     <DriverType>WDM</DriverType>
     <SpectreMitigation>false</SpectreMitigation>
     <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>
@@ -169,7 +170,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(SolutionDir)Common\Ring0\SymbolicAccessKM.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <TreatLinkerWarningAsErrors>false</TreatLinkerWarningAsErrors>
     </Link>
     <DriverSign>
       <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
@@ -179,6 +179,8 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Common\Ring0\Comms\SerialPort.cpp" />
+    <ClCompile Include="..\Common\Ring0\Spinlock\spinlock.cpp" />
     <ClCompile Include="..\Common\Ring0\String\StringHandler.cpp" />
     <ClCompile Include="Driver.cpp" />
     <ClCompile Include="EPT.cpp" />
@@ -192,13 +194,14 @@
     <ClCompile Include="invalid_pcid.cpp" />
     <ClCompile Include="invalid_vpid.cpp" />
     <ClCompile Include="poolmanager.cpp" />
-    <ClCompile Include="spinlock.cpp" />
     <ClCompile Include="vmcall_handler.cpp" />
     <ClCompile Include="vmcs.cpp" />
     <ClCompile Include="vmexit_handler.cpp" />
     <ClCompile Include="vmm.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Common\Ring0\Comms\SerialPort.h" />
+    <ClInclude Include="..\Common\Ring0\Spinlock\spinlock.h" />
     <ClInclude Include="..\Common\Ring0\String\StringHandler.h" />
     <ClInclude Include="AllocateMem.h" />
     <ClInclude Include="AsmCallset.h" />
@@ -223,7 +226,6 @@
     <ClInclude Include="ntapi.h" />
     <ClInclude Include="poolmanager.h" />
     <ClInclude Include="segment.h" />
-    <ClInclude Include="spinlock.h" />
     <ClInclude Include="vmcall_handler.h" />
     <ClInclude Include="vmcall_reason.h" />
     <ClInclude Include="vmcs.h" />

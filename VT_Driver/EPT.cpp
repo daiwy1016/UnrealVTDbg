@@ -4,7 +4,6 @@
 #include "mtrr.h"
 #include "EPT.h"
 #include "msr.h"
-#include "spinlock.h"
 #include "AllocateMem.h"
 #include "vmx.h"
 #include "hypervisor_routines.h"
@@ -580,10 +579,12 @@ namespace ept
 		// Invalidate the cache
 		if (invalidation_type == invept_single_context)
 		{
+			_mm_mfence();
 			invept_single_context_func(ept_state.ept_pointer->all);
 		}
 		else
 		{
+			_mm_mfence();
 			invept_all_contexts_func();
 		}
 
@@ -634,6 +635,54 @@ namespace ept
 		// set jmp offset
 		*((__int32*)&target_buffer[1]) = jmp_value;
 	}
+
+	////将vmcall指令写入伪造页  通过触发vmcall来实现hook
+	//bool write_vmcall_instruction_to_memory(__ept_hooked_function_info* hooked_function_info, void* target_function, void* proxy_function, void** origin_function)
+	//{
+	//	unsigned __int64 hooked_instructions_size = 0;
+
+	//	// Get offset of hooked function within page
+	//	// 获得线性地址的低12位 页偏移
+	//	unsigned __int64 page_offset = MASK_EPT_PML1_OFFSET((unsigned __int64)target_function);
+	//	unsigned __int8* target_buffer = &hooked_function_info->fake_page_contents[page_offset];
+	//	target_buffer[0] = 0x0f;
+	//	target_buffer[1] = 0x01;
+	//	target_buffer[2] = 0xC1;  //0F 01 C1 vmcall
+	//	
+	//	//有的内核函数例如DbgkExitProcess、PspCallThreadNotifyRoutines等
+	//	//头部位置只有两个字节,若此时cpu已经执行完头部的指令，那么$ip将指向第三个字节
+	//	//若此时将我们的伪页换上去之后，$ip将指向C1位置，对于这种情况目前没有太好的处理方案
+	//	//故我们需要能够在第一时间发现问题触发蓝屏报告
+	//	//C1 CC CC指令是ror esp, 0xCC
+	//	//因此我们需要三个CC
+	//	target_buffer[3] = 0xCC;
+	//	target_buffer[4] = 0xCC;
+	//	target_buffer[5] = 0xCC;  //int3 安全措施
+	//	hooked_function_info->handler_function = proxy_function;
+
+	//	//DbgBreakPoint();
+	//	if (origin_function)
+	//	{
+	//		//计算被修改的指令占用多少字节
+	//		while (hooked_instructions_size < 6)
+	//			hooked_instructions_size += LDE((unsigned __int8*)target_function + hooked_instructions_size, 64);
+
+	//		hooked_function_info->hook_size = hooked_instructions_size;
+
+	//		// Copy overwritten instructions to trampoline buffer
+	//		// 将覆盖的指令备份到跳板缓冲区
+	//		RtlCopyMemory(hooked_function_info->first_trampoline_address, target_function, hooked_instructions_size);
+
+	//		// Add the absolute jump back to the original function.
+	//		// 添加绝对跳转回到原来的函数
+	//		hook_write_absolute_jump(&hooked_function_info->first_trampoline_address[hooked_instructions_size], (unsigned __int64)target_function + hooked_instructions_size);
+
+	//		// Return to user address of trampoline to call original function
+	//		*origin_function = hooked_function_info->first_trampoline_address;
+	//	}
+
+	//	return true;
+	//}
 
 	//将vmcall指令写入伪造页  通过触发vmcall来实现hook
 	bool write_vmcall_instruction_to_memory(__ept_hooked_function_info* hooked_function_info, void* target_function, void* proxy_function, void** origin_function)
@@ -1076,6 +1125,7 @@ namespace ept
 		// Track all hooked pages
 		InsertHeadList(&ept_state.hooked_page_list, &hooked_page_info->hooked_page_list);
 
+		_mm_mfence();
 		invept_single_context_func(ept_state.ept_pointer->all);
 
 		return true;
@@ -1359,6 +1409,7 @@ namespace ept
 				return false;
 			}
 
+			_mm_mfence();
 			invept_all_contexts_func(); //在这里刷新全部逻辑处理器的eptp寄存器
 			spinlock::unlock(&eptWatchList_lock);
 
@@ -1547,6 +1598,7 @@ namespace ept
 		// Track all hooked pages
 		InsertHeadList(&ept_state.hooked_page_list, &hooked_page_info->hooked_page_list);
 
+		_mm_mfence();
 		invept_single_context_func(ept_state.ept_pointer->all);
 
 		return true;
@@ -1731,6 +1783,7 @@ namespace ept
 		// Track all hooked pages
 		InsertHeadList(&ept_state.hooked_page_list, &hooked_page_info->hooked_page_list);
 
+		_mm_mfence();
 		invept_single_context_func(ept_state.ept_pointer->all);
 
 		return true;
@@ -1922,6 +1975,7 @@ namespace ept
 		// Track all hooked pages
 		InsertHeadList(&ept_state.hooked_page_list, &hooked_page_info->hooked_page_list);
 
+		_mm_mfence();
 		invept_single_context_func(ept_state.ept_pointer->all);
 
 		return true;
@@ -1991,6 +2045,7 @@ namespace ept
 							return true;
 						}
 
+						_mm_mfence();
 						invept_all_contexts_func();
 						return true;
 					}
@@ -2205,6 +2260,7 @@ namespace ept
 			//一切正常，返回成功：
 			*outID = ID;  //记录这个id，卸载监视的时候需要			
 			spinlock::unlock(&eptWatchList_lock);
+			_mm_mfence();
 			invept_all_contexts_func(); //在这里刷新全部逻辑处理器的eptp寄存器
 			return true;
 		}
@@ -2346,6 +2402,7 @@ namespace ept
 			}
 			if (status == vmcallinfo.CPUCount)
 			{
+				_mm_mfence();
 				invept_all_contexts_func(); //在这里刷新全部逻辑处理器的eptp寄存器			
 			}
 			else
@@ -2456,7 +2513,6 @@ namespace ept
 		unsigned __int64 guest_physical_adddress,
 		int& bpType)
 	{
-
 		//判断是否是被监视的页面
 		if (hooked_page_info->pfn_of_hooked_page == GET_PFN(guest_physical_adddress))
 		{

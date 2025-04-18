@@ -15,7 +15,6 @@
 #include "invalid_vpid.h"
 #include "invalid_pcid.h"
 #include "segment.h"
-#include "spinlock.h"
 
 
 void vmexit_nmi_window_handler(__vcpu* vcpu);
@@ -23,6 +22,8 @@ void vmexit_vmcall_handler(__vcpu* vcpu);
 void vmexit_unimplemented(__vcpu* vcpu);
 void vmexit_monitor_trap_flag_handler(__vcpu* vcpu);
 void vmexit_exception_or_nmi_handler(__vcpu* vcpu);
+void vmexit_init_signal_handler(__vcpu* vcpu);
+void vmexit_sipi_handler(__vcpu* vcpu);
 void vmexit_ept_violation_handler(__vcpu* vcpu);
 void vmexit_ept_misconfiguration_handler(__vcpu* vcpu);
 void vmexit_cr_handler(__vcpu* vcpu);
@@ -200,6 +201,8 @@ void dispatch_vm_exit(__vcpu* vcpu)
 	switch (vcpu->vmexit_info.reason)
 	{
 	case VMX_EXIT_REASON_EXCEPTION_OR_NMI:             vmexit_exception_or_nmi_handler(vcpu);     break;
+	case VMX_EXIT_REASON_INIT_SIGNAL:                  vmexit_init_signal_handler(vcpu);          break;
+	case VMX_EXIT_REASON_STARTUP_IPI:                  vmexit_sipi_handler(vcpu);                 break;
 	case VMX_EXIT_REASON_EXECUTE_GETSEC:               vmexit_getsec_handler(vcpu);              break;
 	case VMX_EXIT_REASON_EXECUTE_INVD:                 vmexit_invd_handler(vcpu);                break;
 	case VMX_EXIT_REASON_EXECUTE_INVLPG:               vmexit_invlpg_handler(vcpu);              break;
@@ -232,6 +235,7 @@ void dispatch_vm_exit(__vcpu* vcpu)
 	default:
 	{
 		//其他vmexit，先注入#GP异常
+		sLog("reason: %d\n", vcpu->vmexit_info.reason);
 		hv::inject_interruption(EXCEPTION_VECTOR_GENERAL_PROTECTION_FAULT, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, true);
 		break;
 	}
@@ -307,11 +311,13 @@ void adjust_rip(__vcpu* vcpu)
 
 void vmexit_unimplemented(__vcpu* vcpu)
 {
+	sLog("\n");
 	hv::inject_interruption(EXCEPTION_VECTOR_GENERAL_PROTECTION_FAULT, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, true);
 }
 
 void vmexit_nmi_window_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	--vcpu->queued_nmis;
 
 	// inject the NMI into the guest
@@ -320,6 +326,7 @@ void vmexit_nmi_window_handler(__vcpu* vcpu)
 
 	if (vcpu->queued_nmis == 0) {
 		// disable NMI-window exiting since we have no more NMIs to inject
+		// 禁用 NMI-window exiting，因为我们没有更多 NMI 可以注入
 		auto ctrl = hv::read_ctrl_proc_based();
 		ctrl.nmi_window_exiting = 0;
 		hv::write_ctrl_proc_based(ctrl);
@@ -327,6 +334,7 @@ void vmexit_nmi_window_handler(__vcpu* vcpu)
 
 	// there is the possibility that a host NMI occurred right before we
 	// disabled NMI-window exiting. make sure to re-enable it if this is the case.
+	// 在我们禁用 NMI-window exiting 之前，有可能发生host NMI。如果是这种情况，请确保重新启用它。
 	if (vcpu->queued_nmis > 0) {
 		auto ctrl = hv::read_ctrl_proc_based();
 		ctrl.nmi_window_exiting = 1;
@@ -428,12 +436,6 @@ void vmexit_monitor_trap_flag_handler(__vcpu* vcpu)
 					}
 					break;
 				}
-				//case EPTW_READ:
-				//{
-				//	//重新设置为不可读
-				//	hooked_page_info->entry_address->read = 0;
-				//	break;
-				//}
 				case EPTW_READWRITE:
 				{
 					//重新设置为不可读写
@@ -461,6 +463,7 @@ void vmexit_monitor_trap_flag_handler(__vcpu* vcpu)
 					break;
 				}				
 				//刷新当前逻辑处理器
+				_mm_mfence();
 				invept_single_context_func(vcpu->ept_state->ept_pointer->all);
 			}
 			CleanUp(vcpu, hooked_page_info);
@@ -472,7 +475,7 @@ void vmexit_monitor_trap_flag_handler(__vcpu* vcpu)
 //处理int3断点中断
 unsigned __int32 handler_breakpoint(__ept_state& ept_state, __vmexit_interrupt_info interrupt_info)
 {
-	//DbgBreakPoint();
+	sLog("\n");
 	unsigned __int64 guest_rip = hv::vmread(GUEST_RIP);
 	unsigned __int64 physical_address = MmGetPhysicalAddress((PVOID)guest_rip).QuadPart;
 
@@ -517,7 +520,7 @@ unsigned __int32 handler_breakpoint(__ept_state& ept_state, __vmexit_interrupt_i
 //处理int1
 unsigned __int32 handler_debug(__ept_state& ept_state, __vmexit_interrupt_info interrupt_info)
 {
-	//DbgBreakPoint();
+	sLog("\n");
 	unsigned __int64 guest_rip = hv::vmread(GUEST_RIP);
 	unsigned __int64 physical_address = MmGetPhysicalAddress((PVOID)guest_rip).QuadPart;
 
@@ -554,6 +557,7 @@ unsigned __int32 handler_debug(__ept_state& ept_state, __vmexit_interrupt_info i
 
 void vmexit_exception_or_nmi_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	//递增nmi计数
 	++vcpu->queued_nmis;
 
@@ -564,8 +568,25 @@ void vmexit_exception_or_nmi_handler(__vcpu* vcpu)
 	hv::write_ctrl_proc_based(ctrl);
 }
 
+//cpu重启信号
+void vmexit_init_signal_handler(__vcpu* vcpu)
+{
+	sLog("GUEST_ACTIVITY_STATE: %d\n", hv::vmread(GUEST_ACTIVITY_STATE));
+	sLog("GUEST_RSP: 0x%llX\n", hv::vmread(GUEST_RSP));
+	sLog("GUEST_RIP: 0x%llX\n", hv::vmread(GUEST_RIP));
+	hv::vmwrite<unsigned __int64>(GUEST_ACTIVITY_STATE, vmx_active);
+	adjust_rip(vcpu);
+}
+
+void vmexit_sipi_handler(__vcpu* vcpu)
+{
+	sLog("GUEST_ACTIVITY_STATE: %d\n", hv::vmread(GUEST_ACTIVITY_STATE));
+	hv::vmwrite<unsigned __int64>(GUEST_ACTIVITY_STATE, vmx_active);
+}
+
 void vmexit_ept_misconfiguration_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	auto const phys = hv::vmread(GUEST_PHYSICAL_ADDRESS);
 }
 
@@ -619,6 +640,7 @@ void vmexit_ept_violation_handler(__vcpu* vcpu)
 						{
 							vcpu->ept_state->page_to_change = hooked_page_info;
 							//刷新当前逻辑处理器的eptp
+							_mm_mfence();
 							invept_single_context_func(vcpu->ept_state->ept_pointer->all);
 						}					
 					}
@@ -791,6 +813,7 @@ bool mov_to_cr3_handler(__vcpu* vcpu, unsigned __int64 guest_cr3)
 
 void emulate_lmsw(__vcpu* vcpu, uint16_t const value)
 {
+	sLog("\n");
 	// 3.25.1.3
 
 	cr0 new_cr0;
@@ -821,6 +844,7 @@ void emulate_lmsw(__vcpu* vcpu, uint16_t const value)
 //Vol3A[2.5 CONTROL REGISTERS]
 bool mov_to_cr0_handler(__vcpu* vcpu, unsigned __int64 guest_cr0)
 {
+	sLog("\n");
 	union
 	{
 		__cr0 cr0;
@@ -853,6 +877,7 @@ bool mov_to_cr0_handler(__vcpu* vcpu, unsigned __int64 guest_cr0)
 		else
 			hv::update_ept_memory_type(*vcpu->ept_state);
 
+		_mm_mfence();
 		invept_all_contexts_func();
 	}
 
@@ -876,6 +901,7 @@ bool mov_to_cr0_handler(__vcpu* vcpu, unsigned __int64 guest_cr0)
 
 bool mov_to_cr4_handler(unsigned __int64 guest_cr4)
 {
+	sLog("\n");
 	cr4 new_cr4;
 	new_cr4.flags = guest_cr4;
 
@@ -1030,6 +1056,7 @@ void vmexit_cr_handler(__vcpu* vcpu)
 //VT-x instructions handler
 void vmexit_vm_instruction(__vcpu* vcpu)
 {
+	sLog("\n");
 	UNREFERENCED_PARAMETER(vcpu);
 	//为每个 VMX 指令注入 #UD，因为我们不允许guest进入 VMX operation
 	hv::inject_interruption(EXCEPTION_VECTOR_UNDEFINED_OPCODE, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, false);
@@ -1039,12 +1066,14 @@ void vmexit_vm_instruction(__vcpu* vcpu)
 //SMX: GETSEC.
 void vmexit_getsec_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	//向guest注入#GP异常,因为我们已经在IA32_FEATURE_CONTROL寄存器中禁用了SMX模式
 	hv::inject_interruption(EXCEPTION_VECTOR_GENERAL_PROTECTION_FAULT, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, true);
 }
 
 void vmexit_vmx_on_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	if (!hv::read_effective_guest_cr4().vmx_enable)
 	{
 		hv::inject_interruption(EXCEPTION_VECTOR_UNDEFINED_OPCODE, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, false);
@@ -1058,18 +1087,21 @@ void vmexit_vmx_on_handler(__vcpu* vcpu)
 //三重故障处理
 void vmexit_triple_fault_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	hv::inject_interruption(EXCEPTION_VECTOR_GENERAL_PROTECTION_FAULT, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, true);
 }
 
 //处理失败的vmexit
 void vmexit_failed(__vcpu* vcpu)
 {
+	sLog("\n");
 	hv::inject_interruption(EXCEPTION_VECTOR_GENERAL_PROTECTION_FAULT, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, true);
 }
 
 //清除cpu缓存,并将数据写回到内存
 void vmexit_invd_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	//hv::inject_interruption(EXCEPTION_VECTOR_GENERAL_PROTECTION_FAULT, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, true);
 	__wbinvd();
 	adjust_rip(vcpu);
@@ -1077,6 +1109,7 @@ void vmexit_invd_handler(__vcpu* vcpu)
 
 void vmexit_invlpg_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	invvpid_invidual_address_func(vcpu->vmexit_info.qualification, 1);
 
 	adjust_rip(vcpu);
@@ -1094,6 +1127,7 @@ void vmexit_rdtscp_handler(__vcpu* vcpu)
 	// On processors that support the Intel 64 architecture, the high-order 32 bits of each of RAX, RDX, and RCX are cleared.
 	//
 
+	sLog("\n");
 	unsigned __int32 processor_id;
 	unsigned __int64 tsc = __rdtscp(&processor_id);
 	vcpu->vmexit_info.guest_registers->rcx = processor_id;
@@ -1106,10 +1140,12 @@ void vmexit_rdtscp_handler(__vcpu* vcpu)
 void vmexit_vmx_preemption_handler(__vcpu* vcpu)
 {
 	//这里目前什么都不做
+	sLog("\n");
 }
 
 void vmexit_xsetbv_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	__xcr0 new_xcr0;
 	__xcr0 current_xcr0;
 
@@ -1194,6 +1230,7 @@ void vmexit_rdtsc_handler(__vcpu* vcpu)
 	// Volume 3 for specific details of the time stamp counter behavior.
 	//
 
+	sLog("\n");
 	unsigned __int64 tsc = __rdtsc();
 
 	vcpu->vmexit_info.guest_registers->rdx = MASK_GET_HIGHER_32BITS(tsc) >> 32;
@@ -1292,6 +1329,7 @@ void vmexit_msr_read_handler(__vcpu* vcpu)
 //将EDX:EAX中的值写入ECX指定的MSR。
 void vmexit_msr_write_handler(__vcpu* vcpu)
 {
+	sLog("\n");
 	unsigned __int64 msr_index = vcpu->vmexit_info.guest_registers->rcx & 0xFFFF'FFFF;
 
 	__msr msr;
@@ -1315,6 +1353,7 @@ void vmexit_msr_write_handler(__vcpu* vcpu)
 
 	// we need to make sure to update EPT memory types if the guest
 	// modifies any of the MTRR registers
+	// 如果guest修改了任何 MTRR 寄存器，我们需要确保更新 EPT 内存类型
 	if (msr_index == IA32_MTRR_DEF_TYPE || msr_index == IA32_MTRR_FIX64K_00000 ||
 		msr_index == IA32_MTRR_FIX16K_80000 || msr_index == IA32_MTRR_FIX16K_A0000 ||
 		(msr_index >= IA32_MTRR_FIX4K_C0000 && msr_index <= IA32_MTRR_FIX4K_F8000) ||
@@ -1323,6 +1362,7 @@ void vmexit_msr_write_handler(__vcpu* vcpu)
 		if (!hv::read_effective_guest_cr0().cache_disable)
 			hv::update_ept_memory_type(*vcpu->ept_state);
 
+		_mm_mfence();
 		invept_all_contexts_func();
 	}
 

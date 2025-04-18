@@ -12,6 +12,7 @@
 #include "vmexit_handler.h"
 #include "vmcs.h"
 
+
 EXTERN_C
 VOID Unload(PDRIVER_OBJECT DriverObject)
 {
@@ -35,6 +36,7 @@ NTSTATUS DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING Regi
 {
     UNREFERENCED_PARAMETER(DriverObject);
     UNREFERENCED_PARAMETER(RegistryPath);
+    sLog("\n");
 
     DriverObject->DriverUnload = Unload;
     KdPrint(("DriverEntry!!!\n"));

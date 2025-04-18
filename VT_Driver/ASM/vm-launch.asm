@@ -8,7 +8,7 @@ vm_launch proc
 
   ; set VMCS_GUEST_RIP to the address of <successful_launch>
   mov rax, 681Eh
-  mov rdx, successful_launch
+  mov rdx, successful_launch  ;成功启动
   vmwrite rax, rdx
 
   vmlaunch

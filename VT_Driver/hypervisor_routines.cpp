@@ -6,7 +6,6 @@
 #include "cpuid.h"
 #include "crx.h"
 #include "msr.h"
-#include "spinlock.h"
 #include "mtrr.h"
 #include "EPT.h"
 #include "hypervisor_routines.h"

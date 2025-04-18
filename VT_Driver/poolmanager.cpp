@@ -4,7 +4,6 @@
 #include "mtrr.h"
 #include "EPT.h"
 #include "AllocateMem.h"
-#include "spinlock.h"
 
 
 namespace pool_manager

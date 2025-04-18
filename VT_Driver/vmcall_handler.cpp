@@ -53,7 +53,7 @@ void vmexit_vmcall_handler(__vcpu* vcpu)
 		{
 			return;  //不去更改rax寄存器
 		}
-
+		sLog("\n");
 		hv::inject_interruption(EXCEPTION_VECTOR_UNDEFINED_OPCODE, INTERRUPT_TYPE_HARDWARE_EXCEPTION, 0, false);
 		return;
 	}
@@ -176,10 +176,12 @@ void vmexit_vmcall_handler(__vcpu* vcpu)
 		// If set invept all contexts
 		if (vmcall_parameter1 == true)
 		{
+			_mm_mfence();
 			invept_all_contexts_func();
 		}
 		else
 		{
+			_mm_mfence();
 			invept_single_context_func((*vcpu->ept_state).ept_pointer->all);
 		}
 

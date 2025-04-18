@@ -70,7 +70,7 @@ namespace hv
 
 			auto const cpu = reinterpret_cast<__vcpu*>(_readfsbase_u64());
 			++cpu->queued_nmis;
-
+			sLog("\n");
 			break;
 		}				
 		default: {  // host exceptions

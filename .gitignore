@@ -57,3 +57,5 @@ DbgkSysWin10/x64/Debug/DbgkSysWin10.Build.CppClean.log
 /UnrealDbgDll/x64
 /x64
 /DbgkSysWin10/ARM/Debug
+/UnrealDbgDll/Common/__history
+/UnrealDbgDll/Common/__recovery
